@@ -1,0 +1,51 @@
+For Example 
+if you want to run Snapshots every 15 mins , here is the command 
+*/15 * * * * az storage share snapshot --name <File share name> --account-name <Storage account name>
+
+if you want to run Snapshots hourly , here is the command 
+* */1 * * * az storage share snapshot --name <File share name> --account-name <Storage account name>
+
+if you want to run Snapshots daily at 9PM, here is the command 
+0 21 * * * az storage share snapshot --name <File share name> --account-name <Storage account name>
+
+if you want to run Snapshots Weekly at 9PM, here is the command 
+0 21 * * 5 az storage share snapshot --name <File share name> --account-name <Storage account name>
+
+if you want to run Snapshots  Monthly , last day of the month at 9PM, here is the command 
+0 21 30 1-12 * az storage share snapshot --name <File share name> --account-name <Storage account name>
+
+##PoweShell Script to delete Snapshots 
+Connect-AzAccount
+Set-AzContext -Subscription "Subscription Name"
+
+$resourceGroupName = "Resource Group Name"
+$accountName = "Storage Account name"
+$shareName = "Share Name"
+
+$snapshotLifetimeInDays = "40"
+#$snapshotLifetimeInMinutes = ""
+$whatIf = $false
+
+$CurrentDateTime = (Get-Date).ToUniversalTime()
+$DateTimeThreshold = $CurrentDateTime.AddDays(-$snapshotLifetimeInDays)
+#$DateTimeThreshold = $CurrentDateTime.AddMinutes(-$snapshotLifetimeInMinutes)
+
+Write-Host "Querying all snapshots for share '$shareName'"
+$snapshotList = (Get-AzRmStorageShare -ResourceGroupName $resourcegroupname -StorageAccountName $accountName -IncludeSnapshot) | Where-Object { $_.Name -eq $shareName -and $_.snapshotTime -ne $null }
+$snapshotList
+
+Write-Host "Current date/time is $CurrentDateTime. Removing share snapshots older than '$DateTimeThreshold'"
+foreach ($snapshot in $snapshotList) {
+    if ($snapshot.SnapshotTime -lt $DateTimeThreshold) {
+        Write-Host "Removing snapshot '$($snapshot.snapshotTime)' of share '$($snapshot.Name)'"
+        if ($whatIf -ne $true) {
+
+        }
+    } else {
+        Write-Host "Retaining recent snapshot '$($snapshot.snapshotTime)' of share '$($snapshot.Name)'"
+    }
+}
+
+Write-Host "Querying all snapshots for share '$shareName' after deletion of old snapshots"
+$snapshotListNew = (Get-AzRmStorageShare -ResourceGroupName $resourcegroupname -StorageAccountName $accountName -IncludeSnapshot)
+$snapshotListNew 
